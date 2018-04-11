@@ -506,6 +506,7 @@ python () {
         d.setVarFlag('do_image_%s' % t, 'subimages', ' '.join(subimages))
         d.appendVarFlag('do_image_%s' % t, 'vardeps', ' '.join(vardeps))
         d.appendVarFlag('do_image_%s' % t, 'vardepsexclude', 'DATETIME')
+        d.appendVarFlag('do_image_%s' % t, 'vardepsexclude', 'GDATETIME')
 
         bb.debug(2, "Adding type %s before %s, after %s" % (t, 'do_image_complete', after))
         bb.build.addtask('do_image_%s' % t, 'do_image_complete', after, d)
