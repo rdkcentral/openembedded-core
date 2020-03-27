@@ -5,9 +5,14 @@ SECTION = "bootloader"
 LICENSE = "GPLv2 | BSD"
 DEPENDS = "flex-native bison-native"
 
-SRC_URI = "git://git.kernel.org/pub/scm/utils/dtc/dtc.git;branch=master \
-           file://make_install.patch \
+<<<<<<< HEAD:meta/recipes-kernel/dtc/dtc.inc
+SRC_URI = "git://git.kernel.org/pub/scm/utils/dtc/dtc.git \
+           file://make_install_1.5.1.patch \
            file://0001-dtc-Fix-Makefile-to-add-CFLAGS-not-override.patch \
+=======
+SRC_URI = "git://git.kernel.org/pub/scm/utils/dtc/dtc.git \
+           file://make_install_1.5.1.patch \
+>>>>>>> BCOM-4454: [Yocto 3.1] Use the same DTC V1.4.1 as Morty build:meta/recipes-kernel/dtc/dtc_1.5.1.inc
            "
 
 UPSTREAM_CHECK_GITTAGREGEX = "v(?P<pver>\d+(\.\d+)+)"
