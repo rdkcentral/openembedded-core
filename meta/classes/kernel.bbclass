@@ -252,7 +252,7 @@ do_bundle_initramfs () {
 		copy_initramfs
 		# Backing up kernel image relies on its type(regular file or symbolic link)
 		tmp_path=""
-		for imageType in ${KERNEL_IMAGETYPE_FOR_MAKE} ; do
+		for imageType in ${KERNEL_IMAGETYPES} ; do
 			if [ -h ${KERNEL_OUTPUT_DIR}/$imageType ] ; then
 				linkpath=`readlink -n ${KERNEL_OUTPUT_DIR}/$imageType`
 				realpath=`readlink -fn ${KERNEL_OUTPUT_DIR}/$imageType`
