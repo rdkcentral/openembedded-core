@@ -11,8 +11,10 @@ LIC_FILES_CHKSUM = "file://debian/copyright;md5=e7358b9541ccf3029e9705ed8de57968
 DEPENDS = "ca-certificates-native"
 DEPENDS_class-native = "openssl-native"
 DEPENDS_class-nativesdk = "ca-certificates-native openssl-native"
+PACKAGE_WRITE_DEPS += "ca-certificates-native"
 
-SRCREV = "f54715702c5c0581c9461f78fd84e2c8d2ec243c"
+SRCREV = "adc13592b55ef00450412d61a2145d162a4afb19"
+PR = "r20170717"
 
 SRC_URI = "git://anonscm.debian.org/collab-maint/ca-certificates.git \
            file://0002-update-ca-certificates-use-SYSROOT.patch \
@@ -79,4 +81,4 @@ do_install_append_class-native () {
 
 RDEPENDS_${PN} += "openssl"
 
-BBCLASSEXTEND += "native nativesdk"
+BBCLASSEXTEND = "native nativesdk"
