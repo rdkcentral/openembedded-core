@@ -67,6 +67,3 @@ LTO ?= "${@bb.utils.contains('DISTRO_FEATURES', 'lto', '-flto', '', d)}"
 SELECTED_OPTIMIZATION_append_class-target = " ${LTO}"
 TARGET_LDFLAGS_append_class-target = " ${LTO}"
 
-SELECTED_OPTIMIZATION[vardeps] += "LTO"
-
-PACKAGE_DEBUG_SPLIT_STYLE = "debug-without-src"
