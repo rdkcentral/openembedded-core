@@ -20,3 +20,5 @@ FILES_${PN} = "${libdir}/*.so.*"
 FILES_${PN}-dev += "${bindir}/libart2-config"
 
 S = "${WORKDIR}/libart_lgpl-${PV}"
+
+BBCLASSEXTEND = "native"
