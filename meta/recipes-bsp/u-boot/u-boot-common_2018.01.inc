@@ -9,7 +9,7 @@ PE = "1"
 # repo during parse
 SRCREV = "f3dd87e0b98999a78e500e8c6d2b063ebadf535a"
 
-SRC_URI = "git://git.denx.de/u-boot.git \
+SRC_URI = "git://github.com/u-boot/u-boot.git \
     file://MPC8315ERDB-enable-DHCP.patch \
     file://0001-efi_loader-avoid-make-race-condition.patch \
 "
