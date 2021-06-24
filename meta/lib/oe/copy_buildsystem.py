@@ -102,8 +102,6 @@ class BuildSystem(object):
                 layerdestpath += '/' + os.path.basename(corebase)
             else:
                 layer_relative = os.path.relpath(layer, corebase)
-                if os.path.dirname(layer_relative) == corebase_relative:
-                    layer_relative = os.path.dirname(corebase_relative) + '/' + layernewname
                 layer_relative = os.path.basename(corebase) + '/' + layer_relative
                 if os.path.dirname(layer_relative) != layernewname:
                     layerdestpath += '/' + os.path.dirname(layer_relative)
