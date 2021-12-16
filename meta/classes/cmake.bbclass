@@ -4,6 +4,28 @@ OECMAKE_SOURCEPATH ?= "${S}"
 DEPENDS_prepend = "cmake-native "
 B = "${WORKDIR}/build"
 
+# What CMake generator to use.
+# The supported options are "Unix Makefiles" or "Ninja".
+OECMAKE_GENERATOR ?= "Unix Makefiles"
+
+python() {
+    generator = d.getVar("OECMAKE_GENERATOR", True)
+    if "Unix Makefiles" in generator:
+        args = "-G '" + generator +  "' -DCMAKE_MAKE_PROGRAM=/usr/bin/make"
+        d.setVar("OECMAKE_GENERATOR_ARGS", args)
+        d.setVar("CMAKE_MAKE_PROGRAM", "/usr/bin/make")
+        d.setVarFlag("do_compile", "progress", "percent")
+    elif "Ninja" in generator:
+        args = "-G '" + generator + "' -DCMAKE_MAKE_PROGRAM=${STAGING_BINDIR_NATIVE}/ninja"
+        d.appendVar("DEPENDS", " ninja-native")
+        d.setVar("OECMAKE_GENERATOR_ARGS", args)
+        d.setVar("CMAKE_MAKE_PROGRAM", "${STAGING_BINDIR_NATIVE}/ninja")
+        d.setVarFlag("do_compile", "progress", r"outof:^\[(\d+)/(\d+)\]\s+")
+    else:
+        bb.fatal("Unknown CMake Generator %s" % generator)
+}
+
+
 # We need to unset CCACHE otherwise cmake gets too confused
 CCACHE = ""
 
@@ -62,6 +84,7 @@ set( CMAKE_CXX_FLAGS_RELEASE "${OECMAKE_CXX_FLAGS_RELEASE}" CACHE STRING "Additi
 set( CMAKE_ASM_FLAGS_RELEASE "${OECMAKE_C_FLAGS_RELEASE}" CACHE STRING "Additional ASM FLAGS for release" )
 set( CMAKE_C_LINK_FLAGS "${OECMAKE_C_LINK_FLAGS}" CACHE STRING "LDFLAGS" )
 set( CMAKE_CXX_LINK_FLAGS "${OECMAKE_CXX_LINK_FLAGS}" CACHE STRING "LDFLAGS" )
+set( CMAKE_MAKE_PROGRAM "${@d.getVar("CMAKE_MAKE_PROGRAM", True)}" CACHE FILEPATH "" FORCE)
 
 # only search in the paths provided so cmake doesnt pick
 # up libraries and tools from the native build machine
