@@ -50,6 +50,7 @@ PACKAGECONFIG[directfb] = "--enable-directfb=yes,,directfb"
 PACKAGECONFIG[valgrind] = "--enable-valgrind=yes,--disable-valgrind,valgrind"
 PACKAGECONFIG[egl] = "--enable-egl=yes,--disable-egl,virtual/egl"
 PACKAGECONFIG[glesv2] = "--enable-glesv2,--disable-glesv2,virtual/libgles2"
+PACKAGECONFIG[glesv3] = "--enable-glesv3,--disable-glesv3,virtual/libgles3"
 PACKAGECONFIG[opengl] = "--enable-gl,--disable-gl,virtual/libgl"
 PACKAGECONFIG[trace] = "--enable-trace,--disable-trace"
 
