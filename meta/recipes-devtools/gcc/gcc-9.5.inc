@@ -70,6 +70,7 @@ SRC_URI = "\
            file://0038-gentypes-genmodes-Do-not-use-__LINE__-for-maintainin.patch \
            file://0039-process_alt_operands-Don-t-match-user-defined-regs-o.patch \
            file://0040-GCOV-do-not-mangle-.gcno-files.patch \
+           file://0041-Disable-Selftest.patch \
            file://0002-libstdc-Fix-inconsistent-noexcept-specific-for-valar.patch \
            file://CVE-2023-4039.patch \
 "
