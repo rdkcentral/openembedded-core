@@ -74,6 +74,10 @@ SRC_URI = "\
            file://0002-libstdc-Fix-inconsistent-noexcept-specific-for-valar.patch \
            file://CVE-2023-4039.patch \
 "
+SANITIER_PATCH = "${@bb.utils.contains('DISTRO_FEATURES', 'leak_sanitizer', 'file://0042-relax_DEEPBIND_for_sanitizer.patch', '', d)}"
+
+SRC_URI += "${SANITIER_PATCH}"
+
 S = "${TMPDIR}/work-shared/gcc-${PV}-${PR}/gcc-${PV}"
 SRC_URI[sha256sum] = "27769f64ef1d4cd5e2be8682c0c93f9887983e6cfd1a927ce5a0a2915a95cf8f"
 # For dev release snapshotting
