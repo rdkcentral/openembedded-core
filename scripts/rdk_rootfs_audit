@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import glob
 import sys
 import os
 import logging
@@ -349,7 +350,19 @@ def write_duplicates_by_name_csv(files, filename):
 
     return filename
 
-def write_summary_txt(files, filename, rootfs_dir):
+def binary_file_size_text(deploy_dir):
+    search_term = os.path.join(deploy_dir, "*.bin")
+    all_text_bits = ["", "Binary File Size"]
+    for file in glob.glob(search_term):
+        if not os.path.islink(file):
+            size_bytes = os.path.getsize(file)
+            file_text_bits = (os.path.basename(file), " : ",
+                              str(round(size_bytes / (10**6))), "MB (", 
+                              str(round(size_bytes / (2**20))), "MiB)")
+            all_text_bits.append("".join(file_text_bits))
+    return "\n".join(all_text_bits)
+
+def write_summary_txt(files, filename, rootfs_dir, deploy_dir):
     logger.debug("Creating summary file")
     total_file_count = len(files)
     duplicate_count = len(get_duplicate_files_sha256(files))
@@ -367,7 +380,7 @@ def write_summary_txt(files, filename, rootfs_dir):
         statsfile.write(f"Rootfs size (Expanded, MB): {rootfs_size}\n")
         statsfile.write(f"Files >= 1MB: {files_over_1mb}\n")
         statsfile.write(f"Files < 1MB: {files_under_1mb}\n")
-
+        statsfile.write(binary_file_size_text(deploy_dir))
     return filename
 
 def main():
@@ -449,7 +462,7 @@ def main():
             generated_report_files.append(write_packages_csv(rootfs_files, base_filepath + "_packages.csv"))
             generated_report_files.append(write_duplicates_csv(rootfs_files, base_filepath + "_duplicates.csv"))
             generated_report_files.append(write_duplicates_by_name_csv(rootfs_files, base_filepath + "_duplicates_by_name.csv"))
-            generated_report_files.append(write_summary_txt(rootfs_files, base_filepath + "_summary.txt", image_rootfs))
+            generated_report_files.append(write_summary_txt(rootfs_files, base_filepath + "_summary.txt", image_rootfs, deploy_dir))
 
             # Compress all files into .tar.gz
             final_dir = ""
