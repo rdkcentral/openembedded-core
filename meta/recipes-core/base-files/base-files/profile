@@ -21,6 +21,13 @@ if [ -d /etc/profile.d ]; then
 fi
 . /etc/device.properties
 
+#Logging SSH logins
+SSH_CONN=`echo $SSH_CONNECTION`
+SOURCE_IP=`echo $SSH_CONN | awk '{print $1}' | tr -d 'f:'`
+DEST_IP=`echo $SSH_CONN | awk '{print $3}' | tr -d 'f:' `
+DATETIME=`dmcli eRT retv Device.Time.CurrentLocalTime`
+echo $DATETIME SSH login from source IP $SOURCE_IP to XLE $DEST_IP >> /rdklogs/logs/ssh_logins.log
+
 # Make sure we are on a serial console (i.e. the device used starts with
 # /dev/tty[A-z]), otherwise we confuse e.g. the eclipse launcher which tries do
 # use ssh
