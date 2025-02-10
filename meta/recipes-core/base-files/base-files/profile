@@ -22,12 +22,15 @@ fi
 . /etc/device.properties
 
 #Logging SSH logins
+ssh_login() {
 SSH_CONN=`echo $SSH_CONNECTION`
-SOURCE_IP=`echo $SSH_CONN | awk '{print $1}' | tr -d 'f:'`
-DEST_IP=`echo $SSH_CONN | awk '{print $3}' | tr -d 'f:' `
-DATETIME=`dmcli eRT retv Device.Time.CurrentLocalTime`
-echo $DATETIME SSH login from source IP $SOURCE_IP to XLE $DEST_IP >> /rdklogs/logs/ssh_logins.log
-
+SOURCE_IP=`echo $SSH_CONN | awk '{print $1}'`
+SOURCE_IP="${SOURCE_IP##::ffff:}"
+DEST_IP=`echo $SSH_CONN | awk '{print $3}'`
+DEST_IP="${DEST_IP##::ffff:}"
+DATETIME=`date`
+echo $DATETIME SSH login from source IP $SOURCE_IP to device IP $DEST_IP >> /rdklogs/logs/ssh_logins.log
+}
 # Make sure we are on a serial console (i.e. the device used starts with
 # /dev/tty[A-z]), otherwise we confuse e.g. the eclipse launcher which tries do
 # use ssh
@@ -37,6 +40,7 @@ esac
 
 export PATH PS1 OPIEDIR QPEDIR QTDIR EDITOR TERM
 if [ "$DEVICE_TYPE" = "broadband" ]; then
+     ssh_login
      umask 027
 else
      umask 022
