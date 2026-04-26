@@ -60,3 +60,6 @@ RDEPENDS:${PN} += "${SUDO_PACKAGES}"
 
 FILES:${PN}-sudo = "${bindir}/sudo ${bindir}/sudoedit"
 FILES:${PN}-lib = "${localstatedir} ${libexecdir} ${sysconfdir} ${libdir} ${nonarch_libdir}"
+
+CVE_STATUS[CVE-2025-64170] = "cpe-incorrect: this CVE is for sudo-rs"
+CVE_STATUS[CVE-2025-64517] = "cpe-incorrect: this CVE is for sudo-rs"
