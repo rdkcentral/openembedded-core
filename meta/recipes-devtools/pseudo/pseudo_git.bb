@@ -1,6 +1,6 @@
 require pseudo.inc
 
-SRC_URI = "git://git.yoctoproject.org/pseudo;branch=master;protocol=https;tag=pseudo-${PV} \
+SRC_URI = "git://git.yoctoproject.org/pseudo;branch=rpurdie/master-next;protocol=https \
            file://fallback-passwd \
            file://fallback-group \
            "
@@ -12,7 +12,7 @@ SRC_URI:append:class-nativesdk = " \
     file://older-glibc-symbols.patch"
 SRC_URI[prebuilt.sha256sum] = "ed9f456856e9d86359f169f46a70ad7be4190d6040282b84c8d97b99072485aa"
 
-SRCREV = "0bad85523ff71f1a84cea5fdf72e7f560c4aeed4"
+SRCREV = "f19995db58ffe2f873345d63f143aa7aec6ff36d"
 PV = "1.9.5"
 
 # largefile and 64bit time_t support adds these macros via compiler flags globally
