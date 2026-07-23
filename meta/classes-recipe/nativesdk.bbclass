@@ -77,8 +77,14 @@ python nativesdk_virtclass_handler () {
     if not (pn.endswith("-nativesdk") or pn.startswith("nativesdk-")):
         return
 
-    defaults = d.getVar("DISTRO_FEATURES")
-    d.setVar("DISTRO_FEATURES", '${@oe.utils.class_filter_features("' + defaults + '", "DISTRO_FEATURES_NATIVESDK", "DISTRO_FEATURES_FILTER_NATIVESDK", d)}')
+    # Eagerly compute filtered DISTRO_FEATURES (plain string). See native.bbclass
+    # for the full explanation of why lazy ${@...} fails for native/nativesdk.
+    # WORKAROUND: DISTRO_FEATURES_DEFAULTS="" re-introduces vanilla clearing.
+    # Review after OE layer rebase.
+    defaults = d.getVar("DISTRO_FEATURES") or ""
+    clean = " ".join(w for w in defaults.split() if "${" not in w)
+    d.setVar("DISTRO_FEATURES", oe.utils.class_filter_features(clean, "DISTRO_FEATURES_NATIVESDK", "DISTRO_FEATURES_FILTER_NATIVESDK", d))
+    d.setVar("DISTRO_FEATURES_DEFAULTS", "")
 
     e.data.setVar("MLPREFIX", "nativesdk-")
     e.data.setVar("PN", "nativesdk-" + e.data.getVar("PN").replace("-nativesdk", "").replace("nativesdk-", ""))

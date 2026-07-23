@@ -30,6 +30,7 @@ PTESTS_FAST = "\
     json-glib \
     libarchive \
     libassuan \
+    libatomic-ops \
     libcheck \
     libconfig \
     libconvert-asn1-perl \
@@ -38,6 +39,7 @@ PTESTS_FAST = "\
     libksba \
     libmd \
     libnl \
+    libpcap \
     libpcre \
     libpcre2 \
     librsvg \
@@ -48,6 +50,7 @@ PTESTS_FAST = "\
     libtest-warnings-perl \
     libtimedate-perl \
     libtry-tiny-perl \
+    liburcu \
     libusb1 \
     libxml-namespacesupport-perl \
     libxml-parser-perl \

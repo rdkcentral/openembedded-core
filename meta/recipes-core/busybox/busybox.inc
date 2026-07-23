@@ -447,8 +447,8 @@ if test "x$D" = "x"; then
         fi
     done
 fi
-if grep -q "^${base_bindir}/bash$" $D${sysconfdir}/busybox.links*; then
-    grep -q "^${base_bindir}/bash$" $D${sysconfdir}/shells || echo ${base_bindir}/bash >> $D${sysconfdir}/shells
+if ls $D${sysconfdir}/busybox.links* >/dev/null 2>&1 && grep -q "^${base_bindir}/bash$" $D${sysconfdir}/busybox.links*; then
+    grep -q "^${base_bindir}/bash$" $D${sysconfdir}/shells 2>/dev/null || echo ${base_bindir}/bash >> $D${sysconfdir}/shells
 fi
 
 """
@@ -456,6 +456,9 @@ fi
 }
 
 pkg_postinst:${PN}:prepend () {
+        # wrynose OE6: use set +e to prevent individual command failures from
+        # aborting the postinstall during rootfs assembly
+        set +e
         # Need path to saved utils, but they may have be removed on upgrade of busybox
         # Only use shell to get paths. Also capture if busybox was saved.
         BUSYBOX=""

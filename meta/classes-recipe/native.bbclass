@@ -126,8 +126,19 @@ python native_virtclass_handler () {
         return
     bpn = d.getVar("BPN")
 
-    defaults = d.getVar("DISTRO_FEATURES")
-    d.setVar("DISTRO_FEATURES", '${@oe.utils.class_filter_features("' + defaults + '", "DISTRO_FEATURES_NATIVE", "DISTRO_FEATURES_FILTER_NATIVE", d)}')
+    # Set features here to prevent DISTRO_FEATURES modifications from affecting
+    # native recipes. Eagerly compute the filtered result (plain string) rather
+    # than using a lazy ${@...} expression: unexpanded ${VAR} tokens such as
+    # ${DISTRO_FEATURES_LIBC} in the snapshot cause brace-matching failures in
+    # BitBake's expression evaluator when embedded inside a ${@...} lazy value.
+    # Stripping those tokens then calling class_filter_features directly is the
+    # inline equivalent of the stripping logic in upstream commit 342ef525.
+    # WORKAROUND: DISTRO_FEATURES_DEFAULTS="" re-introduces the vanilla clearing
+    # that OE-core 6b553a5042 removed. Review both after OE layer rebase.
+    defaults = d.getVar("DISTRO_FEATURES") or ""
+    clean = " ".join(w for w in defaults.split() if "${" not in w)
+    d.setVar("DISTRO_FEATURES", oe.utils.class_filter_features(clean, "DISTRO_FEATURES_NATIVE", "DISTRO_FEATURES_FILTER_NATIVE", d))
+    d.setVar("DISTRO_FEATURES_DEFAULTS", "")
 
     classextend = d.getVar('BBCLASSEXTEND') or ""
     if "native" not in classextend:

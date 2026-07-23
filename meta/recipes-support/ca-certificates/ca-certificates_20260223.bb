@@ -60,8 +60,13 @@ do_install:append:class-target () {
 }
 
 pkg_postinst:${PN}:class-target () {
-    [ -n "$D" ] && sysroot_args="--sysroot $D"
-    $D${sbindir}/update-ca-certificates $sysroot_args
+    # wrynose OE6: skip cross-compilation run, defer to pkg_postinst_ontarget
+    [ -n "$D" ] && exit 0
+    update-ca-certificates
+}
+
+pkg_postinst_ontarget:${PN} () {
+    update-ca-certificates
 }
 
 CONFFILES:${PN} += "${sysconfdir}/ca-certificates.conf"

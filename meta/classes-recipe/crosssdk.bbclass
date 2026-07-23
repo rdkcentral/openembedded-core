@@ -16,8 +16,14 @@ PACKAGE_ARCH = "${SDK_ARCH}"
 python () {
     # set TUNE_PKGARCH to SDK_ARCH
     d.setVar('TUNE_PKGARCH', d.getVar('SDK_ARCH'))
-    defaults = d.getVar("DISTRO_FEATURES")
-    d.setVar("DISTRO_FEATURES", '${@oe.utils.class_filter_features("' + defaults + '", "DISTRO_FEATURES_NATIVESDK", "DISTRO_FEATURES_FILTER_NATIVESDK", d)}')
+    # Eagerly compute filtered DISTRO_FEATURES (plain string). See native.bbclass
+    # for the full explanation of why lazy ${@...} fails for native/nativesdk.
+    # WORKAROUND: DISTRO_FEATURES_DEFAULTS="" re-introduces vanilla clearing.
+    # Review after OE layer rebase.
+    defaults = d.getVar("DISTRO_FEATURES") or ""
+    clean = " ".join(w for w in defaults.split() if "${" not in w)
+    d.setVar("DISTRO_FEATURES", oe.utils.class_filter_features(clean, "DISTRO_FEATURES_NATIVESDK", "DISTRO_FEATURES_FILTER_NATIVESDK", d))
+    d.setVar("DISTRO_FEATURES_DEFAULTS", "")
 }
 
 STAGING_BINDIR_TOOLCHAIN = "${STAGING_DIR_NATIVE}${bindir_native}/${TARGET_ARCH}${TARGET_VENDOR}-${TARGET_OS}"

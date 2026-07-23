@@ -264,7 +264,7 @@ python populate_packages_updatealternatives () {
         alt_remove_links = ""
         updates = update_alternatives_alt_targets(d, pkg)
         for alt_name, alt_link, alt_target, alt_priority in updates:
-            alt_setup_links  += '\tupdate-alternatives --install %s %s %s %s\n' % (alt_link, alt_name, alt_target, alt_priority)
+            alt_setup_links  += '\tupdate-alternatives --install %s %s %s %s || true\n' % (alt_link, alt_name, alt_target, alt_priority)
             alt_remove_links += '\tupdate-alternatives --remove  %s %s\n' % (alt_name, alt_target)
 
         if alt_setup_links:
