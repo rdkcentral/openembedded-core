@@ -91,7 +91,7 @@ python __anonymous () {
 
     # Since kernel-fitimage.bbclass got replaced by kernel-fit-image.bbclass
     if "fitImage" in types:
-        bb.error("fitImage is no longer supported as a KERNEL_IMAGETYPE(S). FIT images are built by the linux-yocto-fitimage recipe.")
+        bb.warn("fitImage is no longer supported as a KERNEL_IMAGETYPE(S). FIT images are built by the linux-yocto-fitimage recipe.")
 
     # KERNEL_IMAGETYPES may contain a mixture of image types supported directly
     # by the kernel build system and types which are created by post-processing
