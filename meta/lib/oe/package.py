@@ -22,7 +22,6 @@ def runstrip(arg):
 
     # kernel module
     if elftype & 16:
-<<<<<<< HEAD
         stripcmd.extend(["--strip-debug", "--remove-section=.comment",
             "--remove-section=.note", "--strip-unneeded", "--remove-section=.pdr", "--preserve-dates"])
     # .so and shared library
@@ -31,15 +30,6 @@ def runstrip(arg):
     # shared or executable:
     elif elftype & 8 or elftype & 4:
         stripcmd.extend(["--remove-section=.comment", "--remove-section=.note", "--strip-unneeded", "--remove-section=.pdr"])
-=======
-        extraflags = "--strip-debug --remove-section=.comment --remove-section=.note --preserve-dates --strip-unneeded --remove-section=.pdr"
-    # .so and shared library
-    elif ".so" in file and elftype & 8:
-        extraflags = "--remove-section=.comment --remove-section=.note --strip-unneeded --remove-section=.pdr"
-    # shared or executable:
-    elif elftype & 8 or elftype & 4:
-        extraflags = "--remove-section=.comment --remove-section=.note --strip-unneeded --remove-section=.pdr"
->>>>>>> XITHREE-6099: Improve Yocto binaries stripping logic to reduce image size stripping .pdr sections
 
     stripcmd.append(file)
     bb.debug(1, "runstrip: %s" % stripcmd)
