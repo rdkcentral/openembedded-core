@@ -60,6 +60,25 @@ resize() {
 	fi
 fi
 
+#Logging SSH logins
+
+ssh_login() {
+SSH_CONN=`echo $SSH_CONNECTION`
+SOURCE_IP=`echo $SSH_CONN | awk '{print $1}'`
+SOURCE_IP="${SOURCE_IP##::ffff:}"
+DEST_IP=`echo $SSH_CONN | awk '{print $3}'`
+DEST_IP="${DEST_IP##::ffff:}"
+DATETIME=`date`
+echo $DATETIME SSH login from source IP $SOURCE_IP to device IP $DEST_IP >> /rdklogs/logs/SSHLogins.log
+}
+
+if [ -e /etc/device.properties ];then
+    . /etc/device.properties
+    if [ "$DEVICE_TYPE" = "broadband" ]; then
+        ssh_login
+    fi
+fi
+
 EDITOR="vi"			# needed for packages like cron, git-commit
 export PATH PS1 OPIEDIR QPEDIR QTDIR EDITOR TERM
 
