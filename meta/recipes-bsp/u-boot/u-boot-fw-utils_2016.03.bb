@@ -11,7 +11,7 @@ SRCREV = "df61a74e6845ec9bdcdd48d2aff5e9c2c6debeaa"
 
 PV = "v2016.03+git${SRCPV}"
 
-SRC_URI = "git://git.denx.de/u-boot.git;branch=master"
+SRC_URI = "git://github.com/u-boot/u-boot.git;branch=master"
 
 S = "${WORKDIR}/git"
 

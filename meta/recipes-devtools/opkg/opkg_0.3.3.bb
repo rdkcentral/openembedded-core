@@ -23,7 +23,7 @@ SRC_URI[sha256sum] = "19db9e73121a5e4c91fa228b0a6a4c55cc3591056130cfb3c66c30aa32
 
 inherit autotools pkgconfig systemd
 
-SYSTEMD_SERVICE_${PN} = "opkg-configure.service"
+SYSTEMD_SERVICE_${PN} = "${@bb.utils.contains("DISTRO_FEATURES", "benchmark_enable","","opkg-configure.service",d)}"
 
 target_localstatedir := "${localstatedir}"
 OPKGLIBDIR = "${target_localstatedir}/lib"
@@ -45,7 +45,8 @@ do_install_append () {
 
 	# We need to create the lock directory
 	install -d ${D}${OPKGLIBDIR}/opkg
-
+        
+        if ${@bb.utils.contains('DISTRO_FEATURES','benchmark_enable','false','true',d)};then
 	if ${@bb.utils.contains('DISTRO_FEATURES','systemd','true','false',d)};then
 		install -d ${D}${systemd_unitdir}/system
 		install -m 0644 ${WORKDIR}/opkg-configure.service ${D}${systemd_unitdir}/system/
@@ -54,6 +55,7 @@ do_install_append () {
 			-e 's,@BINDIR@,${bindir},g' \
 			-e 's,@SYSTEMD_UNITDIR@,${systemd_unitdir},g' \
 			${D}${systemd_unitdir}/system/opkg-configure.service
+        fi
 	fi
 }
 

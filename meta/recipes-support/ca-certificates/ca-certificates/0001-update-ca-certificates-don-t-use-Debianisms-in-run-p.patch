@@ -32,3 +32,4 @@ Index: git/sbin/update-ca-certificates
    do
      ( cat "$ADDED"
        cat "$REMOVED" ) | "$hook" || echo "E: $hook exited with code $?."
+

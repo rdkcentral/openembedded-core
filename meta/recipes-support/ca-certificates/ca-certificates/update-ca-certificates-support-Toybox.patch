@@ -31,4 +31,3 @@ index 79c41bb..ae9e3f1 100755
  # Adds a certificate to the list of trusted ones.  This includes a symlink
  # in /etc/ssl/certs to the certificate file and its inclusion into the
 -- 
-2.1.4
