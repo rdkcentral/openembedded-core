@@ -1,0 +1,476 @@
+#!/usr/bin/env python3
+
+import sys
+import os
+import logging
+import hashlib
+import subprocess
+import tempfile 
+import json
+from datetime import datetime
+import tarfile
+import shutil
+import re
+
+SCRIPTS_PATH = os.path.dirname(os.path.realpath(__file__))
+LIB_PATH = SCRIPTS_PATH + '/lib'
+sys.path = sys.path + [LIB_PATH]
+import scriptutils
+import argparse_oe
+logger = scriptutils.logger_create('rdk_rootfs_audit')
+
+def tinfoil_init():
+    import bb.tinfoil
+    import logging
+    tinfoil = bb.tinfoil.Tinfoil()
+    tinfoil.logger.setLevel(logging.WARNING)
+    tinfoil.prepare(config_only=False)
+    return tinfoil
+
+class Categories:
+    """
+    Represents available package categories
+    """
+    def __init__(self, image_name, tinfoil):
+        self.image_name = image_name
+        self.tinfoil = tinfoil
+        self.categories = self._parseCategories()
+
+
+    def _parseCategories(self):
+        logger.debug("Attempting to load package category information for %s" % self.image_name)
+
+        rd = self.tinfoil.parse_recipe(self.image_name)
+        category_variables = rd.getVarFlags('PACKAGE_CATEGORY')
+
+        categories = {}
+
+        for category in category_variables:
+            categories[category] = category_variables[category].split(' ')
+
+        logger.debug("Found the following package categories: %s", categories)
+
+        return categories
+
+    def get_package_category(self, package_name):
+        name_without_prefix = package_name.replace('lib32-', '')
+
+        for category in self.categories:
+            packages = self.categories[category]
+
+            for package in packages:
+                if re.search(package, name_without_prefix):
+                    return category
+
+        return "Unknown"
+
+
+class File:
+    """
+    Represents a file in rootfs
+    """
+    def __init__(self, filepath, rootfs_directory):
+        self.filepath = filepath
+        # Path relative to the final rootfs
+        self.rootfs_filepath = self.filepath.replace(rootfs_directory, '')
+        self.filename = os.path.basename(filepath)
+        self.filesize_kb = round(os.path.getsize(self.filepath) / 1024, 2)
+        self.package = None
+        self.sha256 = self._sha256()
+        self.filetype = self._filetype()
+
+    def set_package(self, package):
+        self.package = package
+
+    def _sha256(self):
+        """
+        Calculate the SHA256 hash of the file
+        """
+        m = hashlib.sha256()
+
+        with open(self.filepath, 'rb') as file:
+            m.update(file.read())
+            return m.hexdigest()
+
+    def _filetype(self):
+        """
+        Use the `file` command to attempt to work out the type of a given file
+        """
+        filetype = subprocess.check_output(['file', self.filepath]).decode()
+        if "cannot open" in filetype:
+            return "Unknown"
+
+        if "Compiled terminfo entry" in filetype:
+            return "Compiled terminfo entry"
+
+        return filetype.split(":")[1].strip().split(",")[0]
+
+class Package:
+    """
+    Represents a bitbake package
+
+    Contains methods to retrieve info about the package and the recipe(s) that built it.
+    Some info is pulled from the pkgdata directory and other data comes from tinfoil.
+    """
+    def __init__(self, name, categories, pkgdata_dir, rdk_root, tinfoil):
+        self.tinfoil = tinfoil
+        self.categories = categories
+        self.rdk_root = rdk_root
+        self.name = name
+        self.runtime_pkg_file = os.path.join(pkgdata_dir, 'runtime', self.name)
+        self.package_files = self._package_files()
+        self.recipe_name = self._get_recipe_name()
+        self.license = self._license()
+        self.category = self._category()
+        self.recipe_file_full_path = self._get_recipe_filepath()
+        self.recipe_file = self.recipe_file_full_path.replace(self.rdk_root + "/", "")
+        self.layer = self._get_layer()
+        self.appends_full_path = self._get_recipe_appends()
+        self.appends = [] if self.appends_full_path is None else [x.replace(self.rdk_root + "/", "") for x in self.appends_full_path]
+
+    def __hash__(self) -> int:
+        return id(self)
+
+    def __eq__(self, other):
+        if isinstance(other, Package):
+            return self.name == other.name
+        return False
+
+    def _package_files(self):
+        """
+        List of files the package provides
+
+        NOTE: This does not necessarily reflect what's actually installed in rootfs, just the
+        list of all files the package can provide
+        """
+        with open(self.runtime_pkg_file) as file:
+            for line in file:
+                if line.startswith('FILES_INFO:'):
+                    val = line.split(': ', 1)[1].strip()
+                    dictval = json.loads(val)
+                    return list(dictval.keys())
+        return []
+
+    def _get_recipe_name(self):
+        """
+        Get the name of the recipe (PN) that generated the package
+        """
+        with open(self.runtime_pkg_file) as file:
+            for line in file:
+                if line.startswith('PN:'):
+                    return line.split(': ', 1)[1].strip()
+        return ""
+
+    def _get_layer(self):
+        """
+        The layer the recipe lives in
+        """
+        if not self.recipe_file:
+            return ""
+
+        if not ":" in self.recipe_file:
+            return self.recipe_file.split("/")[0].strip()
+
+        # Remove the virtual:multilib:lib32: from the layer name on Broadcom
+        return self.recipe_file.split("/")[0].split(":")[-1].strip()
+
+
+    def _license(self):
+        """
+        The recipe license
+        """
+        with open(self.runtime_pkg_file) as file:
+            for line in file:
+                if line.startswith('LICENSE:'):
+                    return line.split(': ', 1)[1].strip()
+        return ""
+
+    def _category(self):
+        return self.categories.get_package_category(self.name)
+
+    def _get_recipe_filepath(self):
+        if not self.recipe_name:
+            return ""
+
+        recipe = self.tinfoil.get_recipe_file(self.recipe_name)
+        return recipe
+
+    def _get_recipe_appends(self):
+        if not self.recipe_file:
+            return []
+
+        appends = self.tinfoil.get_file_appends(os.path.basename(self.recipe_file))
+        if appends is None:
+            return []
+
+        return appends
+
+
+    def srcuri(self):
+        rd = self.tinfoil.parse_recipe(self.recipe_name)
+
+        result = rd.getVar('SRC_URI')
+        if result is None:
+            return []
+
+        return [x.strip() for x in result.split(' ') if 'file://' not in x and not x.isspace() and x]
+
+def get_rootfs_files(rootfs_path):
+    """
+    Return a list of all files (excl. symlinks) in the provided rootfs directory
+    """
+    rootfs_files = []
+
+    # Loop over rootfs
+    for root, _, files in os.walk(rootfs_path):
+        for file in files:
+            filepath = os.path.join(root, file)
+            try:
+                # Ignore symlinks
+                if not os.path.islink(filepath):
+                    rootfs_files.append(File(filepath, rootfs_path))
+            except PermissionError:
+                continue
+
+    return rootfs_files
+
+def get_package_for_file(all_packages, file):
+    """
+    Return the package the file comes from
+    """
+    for package in all_packages:
+        if file.rootfs_filepath in package.package_files:
+            return package
+
+    return None
+
+def get_duplicate_files_sha256(files):
+    """
+    Return a list of duplicate files based on their sha256 hash
+    """
+    reverse_dict = {}
+    for file in files:
+        reverse_dict.setdefault(file.sha256, set()).add(file)
+
+    return [reverse_dict[x] for x in reverse_dict if len(reverse_dict[x]) > 1]
+
+def get_duplicate_files_name(files):
+    """
+    Return a list of duplicate files based on name & SHA256 hash (e.g. files with same name and hash)
+    """
+    reverse_dict = {}
+    for file in files:
+        reverse_dict.setdefault(file.filename, set()).add(file)
+
+    duplicate_files_by_name = [reverse_dict[x] for x in reverse_dict if len(reverse_dict[x]) > 1]
+
+    tmp = {}
+    for dups in duplicate_files_by_name:
+        for file in dups:
+            tmp.setdefault(file.sha256, set()).add(file)
+
+    results = [tmp[x] for x in tmp if len(tmp[x]) > 1]
+    return results
+
+def get_version_txt(rootfs_dir):
+    version_file = os.path.join(rootfs_dir, "version.txt")
+
+    if not os.path.exists(version_file):
+        logger.warning("Cannot find version.txt in rootfs")
+        return ""
+
+    with open(version_file, 'r') as file:
+        return file.read()
+
+def get_image_name_from_version_txt(version_txt):
+    lines = version_txt.splitlines()
+
+    for line in lines:
+        if "imagename" in line:
+            return line.split(':')[1]
+
+    return "Unknown"
+
+def write_files_csv(files, filename):
+    logger.debug("Creating file report")
+    with open(filename, 'w') as f:
+        f.write("Filename,Package,Recipe,Category,File Type,Size (KB),SHA256\n")
+
+        for file in files:
+            f.write(f'{file.rootfs_filepath},{file.package.name if file.package is not None else "Unknown"},{file.package.recipe_name if file.package is not None else "Unknown"},{file.package.category if file.package is not None else "Unknown"},{file.filetype},{file.filesize_kb},{file.sha256}\n')
+
+    return filename
+
+def write_packages_csv(files, filename):
+    logger.debug("Creating packages report")
+    with open(filename, "w") as f:
+        f.write("Package,Recipe,Layer,Category,Number of files,Size (KB),License,Recipe File,Appends,SRC_URI\n")
+
+        installed_packages = set()
+
+        for file in files:
+            if file.package is not None:
+                installed_packages.add(file.package)
+
+        for package in installed_packages:
+            appends = '\n'.join(package.appends)
+            src_uris = '\n'.join(package.srcuri())
+            files_in_package = len([x for x in files if x.package == package])
+            package_files_size = sum([x.filesize_kb for x in files if x.package == package])
+
+            f.write(f'{package.name},{package.recipe_name},{package.layer},{package.category},{files_in_package},{package_files_size},{package.license},{package.recipe_file},"{appends}","{src_uris}"\n')
+
+    return filename
+
+def write_duplicates_csv(files, filename):
+    logger.debug("Creating duplicates report")
+    duplicates = get_duplicate_files_sha256(files)
+
+    with open(filename, "w") as f:
+        f.write('File,File Name,Package,File Type,Size (KB),SHA256\n')
+
+        for dups in duplicates:
+            for file in dups:
+                f.write(f'{file.rootfs_filepath},{file.filename},{file.package.name if file.package is not None else "Unknown"},{file.filetype},{file.filesize_kb},{file.sha256}\n')
+
+    return filename
+
+def write_duplicates_by_name_csv(files, filename):
+    logger.debug("Creating duplicates (by name) report")
+    # Get duplicate files based on name
+    duplicates = get_duplicate_files_name(files)
+
+    with open(filename, "w") as f:
+        f.write('File,File Name,Package,File Type,Size (KB),SHA256\n')
+
+        for dups in duplicates:
+            for file in dups:
+                f.write(f'{file.rootfs_filepath},{file.filename},{file.package.name if file.package is not None else "Unknown"},{file.filetype},{file.filesize_kb},{file.sha256}\n')
+
+    return filename
+
+def write_summary_txt(files, filename, rootfs_dir):
+    logger.debug("Creating summary file")
+    total_file_count = len(files)
+    duplicate_count = len(get_duplicate_files_sha256(files))
+    shell_script_count = len([x for x in files if "shell script" in x.filetype])
+    rootfs_size = round(sum([x.filesize_kb for x in files]) / 1024, 2)
+
+    files_over_1mb = len([x.filesize_kb for x in files if x.filesize_kb >= 1024])
+    files_under_1mb = len([x.filesize_kb for x in files if x.filesize_kb < 1024])
+
+    with open(filename, mode="w") as statsfile:
+        statsfile.write(f"{get_version_txt(rootfs_dir)}\n")
+        statsfile.write(f"Total file count: {total_file_count}\n")
+        statsfile.write(f"Duplicate file count (by SHA256): {duplicate_count}\n")
+        statsfile.write(f"Shell script count: {shell_script_count}\n")
+        statsfile.write(f"Rootfs size (Expanded, MB): {rootfs_size}\n")
+        statsfile.write(f"Files >= 1MB: {files_over_1mb}\n")
+        statsfile.write(f"Files < 1MB: {files_under_1mb}\n")
+
+    return filename
+
+def main():
+    parser = argparse_oe.ArgumentParser(description="RDK Rootfs Audit Tool - Produces reports on the installed files in the final image rootfs")
+    parser.add_argument('-d', '--debug', help="Enable debug output", action='store_true')
+    parser.add_argument('-o', '--output', help="Output directory to save results")
+    parser.add_argument('image', help='Name of the image(s) to analyse', nargs='+')
+
+    args = parser.parse_args()
+
+    if args.debug:
+        logger.setLevel(logging.DEBUG)
+    else:
+        logger.setLevel(logging.INFO)
+
+    import scriptpath
+    bitbakepath = scriptpath.add_bitbake_lib_path()
+    if not bitbakepath:
+        logger.error("Unable to find bitbake by searching parent directory of this script or PATH")
+        sys.exit(1)
+    logger.debug('Found bitbake path: %s' % bitbakepath)
+
+    tinfoil = tinfoil_init()
+
+    try:
+        for image in args.image:
+            logger.info("Analysing rootfs for %s" % image)
+
+            # Get some bitbake variables
+            pkgdata_dir = tinfoil.config_data.getVar('PKGDATA_DIR')
+            rdk_root_dir = tinfoil.config_data.getVar('RDKROOT')
+            deploy_dir = tinfoil.config_data.getVar('DEPLOY_DIR_IMAGE')
+            rd = tinfoil.parse_recipe(image)
+            image_rootfs = rd.getVar('IMAGE_ROOTFS')
+
+            logger.debug('PKGDATA_DIR is "%s"' % pkgdata_dir)
+            logger.debug('RDKROOT is "%s"' % rdk_root_dir)
+            logger.debug("IMAGE_ROOTFS is '%s'" % image_rootfs)
+            logger.debug("DEPLOY_DIR_IMAGE is '%s'" % deploy_dir)
+
+            if not image_rootfs or not os.path.exists(image_rootfs):
+                logger.error("Cannot find rootfs directory %s. Has the image been successfully built?", image_rootfs)
+                tinfoil.shutdown()
+                sys.exit(1)
+
+            all_categories = Categories(image, tinfoil)
+
+            # Find all the packages available (not necessarily what's in rootfs)
+            logger.info("Getting package info for %s" % image)
+            packages = []
+            for _, _, files in os.walk(os.path.join(pkgdata_dir, 'runtime')):
+                for filename in files:
+                    if not ".packaged" in filename:
+                        packages.append(Package(filename, all_categories, pkgdata_dir, rdk_root_dir, tinfoil))
+
+            logger.info(f'Found {len(packages)} known packages')
+
+             # Find the files actually in rootfs
+            logger.debug("Getting list of rootfs files")
+            rootfs_files = get_rootfs_files(image_rootfs)
+            logger.info(f"Found {len(rootfs_files)} files in image rootfs")
+
+            # Associate packages and installed files
+            for file in rootfs_files:
+                file.set_package(get_package_for_file(packages, file))
+
+            logger.info("Generating reports (this may take a few minutes)")
+
+            # Get the name of the generated image
+            image_name = get_image_name_from_version_txt(get_version_txt(image_rootfs))
+
+            tmpdir = tempfile.mkdtemp()
+            base_filepath = os.path.join(tmpdir, image_name)
+            logger.debug("Report base filename: %s" % base_filepath)
+
+            generated_report_files = []
+
+            generated_report_files.append(write_files_csv(rootfs_files, base_filepath + "_rootfs_files.csv"))
+            generated_report_files.append(write_packages_csv(rootfs_files, base_filepath + "_packages.csv"))
+            generated_report_files.append(write_duplicates_csv(rootfs_files, base_filepath + "_duplicates.csv"))
+            generated_report_files.append(write_duplicates_by_name_csv(rootfs_files, base_filepath + "_duplicates_by_name.csv"))
+            generated_report_files.append(write_summary_txt(rootfs_files, base_filepath + "_summary.txt", image_rootfs))
+
+            # Compress all files into .tar.gz
+            final_dir = ""
+            if args.output:
+                final_dir = args.output
+                os.makedirs(final_dir, exist_ok=True)
+            else:
+                final_dir = deploy_dir
+
+            tar_name = os.path.join(final_dir, image_name + "_rootfs_audit.tar.gz")
+            with tarfile.open(tar_name, 'w:gz') as tar:
+                for file in generated_report_files:
+                    tar.add(file, arcname=os.path.basename(file))
+
+            shutil.rmtree(tmpdir)
+            logger.info("Rootfs audit done for %s" % image)
+            logger.info("Report file saved to %s" % tar_name)
+
+    finally:
+        tinfoil.shutdown()
+
+
+if __name__ == "__main__":
+    main()

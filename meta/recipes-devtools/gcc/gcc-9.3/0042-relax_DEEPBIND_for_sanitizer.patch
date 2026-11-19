@@ -1,0 +1,14 @@
+--- gcc-9.3.0.orig/libsanitizer/sanitizer_common/sanitizer_linux.cc	2023-07-03 08:27:07.466001681 +0000
++++ gcc-9.3.0/libsanitizer/sanitizer_common/sanitizer_linux.cc	2023-07-03 08:32:15.093989962 +0000
+@@ -2047,7 +2047,10 @@
+         "). If you want to run %s library under sanitizers please remove "
+         "RTLD_DEEPBIND from dlopen flags.\n",
+         filename, filename);
+-    Die();
++    // Tried to use -URTLD_DEEPBIND macro in the recipe, but it doesn't work. May be intervenes with real RTLD_DEEPBIND enum?
++    // Let's not worry about libraries that were loaded with deep bind. 
++    // Afterall sanitizer may not be able to intercept
++    //Die();
+   }
+ #endif
+ }

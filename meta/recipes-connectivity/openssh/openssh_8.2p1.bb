@@ -218,6 +218,9 @@ RDEPENDS:${PN}-dev = ""
 # gdb would make attach-ptrace test pass rather than skip but not worth the build dependencies
 RDEPENDS_${PN}-ptest += "${PN}-sftp ${PN}-misc ${PN}-sftp-server make sed sudo coreutils"
 
+# dev package depends on default package, which is empty and thus has issue while generating sdk.
+RDEPENDS_${PN}-dev = ""
+
 RPROVIDES_${PN}-ssh = "ssh"
 RPROVIDES_${PN}-sshd = "sshd"
 

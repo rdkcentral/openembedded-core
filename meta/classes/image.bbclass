@@ -43,7 +43,10 @@ IMAGE_INSTALL_DEBUGFS ?= ""
 
 # These packages will be removed from a read-only rootfs after all other
 # packages have been installed
-ROOTFS_RO_UNNEEDED ??= "update-rc.d base-passwd shadow ${VIRTUAL-RUNTIME_update-alternatives} ${ROOTFS_BOOTSTRAP_INSTALL}"
+def get_mlprefix(d):
+    return d.getVar('MLPREFIX', True)
+mlprefix = "${@get_mlprefix(d)}"
+ROOTFS_RO_UNNEEDED ??= "${mlprefix}update-rc.d ${mlprefix}base-passwd ${mlprefix}shadow ${mlprefix}${VIRTUAL-RUNTIME_update-alternatives} ${mlprefix}${ROOTFS_BOOTSTRAP_INSTALL}"
 
 # packages to install from features
 FEATURE_INSTALL = "${@' '.join(oe.packagegroup.required_packages(oe.data.typed_value('IMAGE_FEATURES', d), d))}"

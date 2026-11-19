@@ -120,6 +120,7 @@ python () {
 
         d.prependVarFlag('do_compile', 'prefuncs', "externalsrc_compile_prefunc ")
         d.prependVarFlag('do_configure', 'prefuncs', "externalsrc_configure_prefunc ")
+        d.prependVarFlag('do_compile', 'postfuncs', "externalsrc_compile_postfunc ")
 
         d.setVarFlag('do_compile', 'file-checksums', '${@srctree_hash_files(d)}')
         d.setVarFlag('do_configure', 'file-checksums', '${@srctree_configure_hash_files(d)}')
@@ -143,6 +144,7 @@ python () {
 }
 
 python externalsrc_configure_prefunc() {
+    import subprocess
     s_dir = d.getVar('S')
     # Create desired symlinks
     symlinks = (d.getVar('EXTERNALSRC_SYMLINKS') or '').split()
@@ -172,15 +174,121 @@ python externalsrc_configure_prefunc() {
                     if link in elines or '/'+link in elines:
                         continue
                     efile.write('/' + link + '\n')
+        else:
+            bb.plain('%s: .git/info not found. Failed to hide EXTERNALSRC_SYMLINKS' % (s_dir))
     except IOError as ioe:
         bb.note('Failed to hide EXTERNALSRC_SYMLINKS from git')
+
+
+    # Store the list of files changed before configure to identify user changed files before the first build
+    git_dir = None
+
+    try:
+        git_dir = os.path.join(s_dir,
+            subprocess.check_output(['git', '-C', s_dir, 'rev-parse', '--git-dir'], stderr=subprocess.DEVNULL).decode("utf-8").rstrip())
+    except subprocess.CalledProcessError:
+        git_dir = s_dir
+
+    precfg = os.path.join(git_dir, 'oe-devtool-precfg-%s' % d.getVar('PN'))
+    try:
+        if not os.path.exists(precfg):
+            with open(precfg, 'w') as precfg_file:
+                env = os.environ.copy()
+                try:
+                    git_status = subprocess.check_output(['git', 'ls-files', '-odm', '-x', 'm4', '--exclude-standard', '--directory'], cwd=s_dir, env=env).decode("utf-8")
+                    if git_status:
+                        git_status_list = git_status.splitlines(False)
+                        for files in git_status_list:
+                            files_str = str(files)
+                            precfg_file.write(files_str + '\n')
+                except subprocess.CalledProcessError:
+                     pass
+    except IOError as ioe:
+        bb.plain('%s: Failed to store precfg changes' % (precfg))
 }
 
 python externalsrc_compile_prefunc() {
+    import subprocess
+
     # Make it obvious that this is happening, since forgetting about it could lead to much confusion
     bb.plain('NOTE: %s: compiling from external source tree %s' % (d.getVar('PN'), d.getVar('EXTERNALSRC')))
+
+    s_dir = d.getVar('S')
+    g_dir = None
+
+    try:
+        g_dir = os.path.join(s_dir,
+            subprocess.check_output(['git', '-C', s_dir, 'rev-parse', '--git-dir'], stderr=subprocess.DEVNULL).decode("utf-8").rstrip())
+    except Exception as e:
+        g_dir = s_dir
+
+    process_precfg = os.path.join(g_dir, 'oe-devtool-precfg-done-%s' % d.getVar('PN'))
+    try:
+        if not os.path.exists(process_precfg):
+            with open(process_precfg, 'w') as efile:
+                env = os.environ.copy()
+                try:
+                    git_status = subprocess.check_output(['git', 'ls-files', '-odm', '--exclude-standard', '--directory'], cwd=s_dir, env=env).decode("utf-8")
+                except subprocess.CalledProcessError:
+                    git_status = ''
+                    pass
+
+                if git_status:
+                    stored_precfg = os.path.join(g_dir, 'oe-devtool-precfg-%s' % d.getVar('PN'))
+                    stored_precfg_file = open(stored_precfg, 'r')
+                    precfg_file_list = stored_precfg_file.readlines()
+                    exclude_file = open(g_dir + '/info/exclude', 'a')
+                    git_status_list = git_status.splitlines(False)
+                    for file in git_status_list:
+                        if file in precfg_file_list:
+                            continue
+                        exclude_file.write('**/' + file + '*' + '\n')
+                        efile.write('**/' + file + '*' + '\n')
+                    exclude_file.close()
+                    stored_precfg_file.close()
+    except IOError as ioe:
+        bb.plain('%s: Failed to add cfg artifacts to .git/info/exclude' % (g_dir))
 }
 
+python externalsrc_compile_postfunc() {
+    import subprocess
+
+    s_dir = d.getVar('S')
+    g_dir = None
+
+    try:
+        g_dir = os.path.join(s_dir,
+            subprocess.check_output(['git', '-C', s_dir, 'rev-parse', '--git-dir'], stderr=subprocess.DEVNULL).decode("utf-8").rstrip())
+    except subprocess.CalledProcessError:
+        g_dir = s_dir
+
+    process_precfg = os.path.join(g_dir, 'oe-devtool-postcompile-%s' % d.getVar('PN'))
+    try:
+        if not os.path.exists(process_precfg):
+            with open(process_precfg, 'w') as efile:
+                env = os.environ.copy()
+                try:
+                    git_status = subprocess.check_output(['git', 'ls-files', '-odm', '--exclude-standard', '--directory'], cwd=s_dir, env=env).decode("utf-8")
+                except subprocess.CalledProcessError:
+                    git_status = ''
+                    pass
+
+                if git_status:
+                    stored_precfg = os.path.join(g_dir, 'oe-devtool-precfg-%s' % d.getVar('PN'))
+                    stored_precfg_file = open(stored_precfg, 'r')
+                    precfg_file_list = stored_precfg_file.readlines()
+                    exclude_file = open(g_dir + '/info/exclude', 'a')
+                    git_status_list = git_status.splitlines(False)
+                    for file in git_status_list:
+                        if file in precfg_file_list:
+                            continue
+                        exclude_file.write('**/' + file + '*' + '\n')
+                        efile.write('**/' + file + '*' + '\n')
+                    exclude_file.close()
+                    stored_precfg_file.close()
+    except IOError as ioe:
+        bb.plain('%s: Failed to add postcompile files to .git/info/exclude' % (g_dir))
+}
 do_buildclean[dirs] = "${S} ${B}"
 do_buildclean[nostamp] = "1"
 do_buildclean[doc] = "Call 'make clean' or equivalent in ${B}"
@@ -249,18 +357,27 @@ def srctree_configure_hash_files(d):
     based on the value of CONFIGURE_FILES
     """
     in_files = (d.getVar('CONFIGURE_FILES') or '').split()
+    import subprocess
+    s_dir = d.getVar('EXTERNALSRC')
+    env = os.environ.copy()
+    try:
+        git_lsfiles = subprocess.check_output(['git', 'ls-files'], cwd=s_dir, env=env).decode("utf-8")
+    except Exception as e:
+        bb.warn('%s: git ls-files returned error at %s' % (d.getVar('PN'), d.getVar('EXTERNALSRC')))
+        git_lsfiles = ''
+        pass
+    git_files_list = git_lsfiles.splitlines(False)
     out_items = []
     search_files = []
     for entry in in_files:
-        if entry.startswith('/'):
+        if entry.startswith('/') and (len(git_files_list) == 0 or entry in git_files_list):
             out_items.append('%s:%s' % (entry, os.path.exists(entry)))
         else:
             search_files.append(entry)
     if search_files:
-        s_dir = d.getVar('EXTERNALSRC')
         for root, _, files in os.walk(s_dir):
             for f in files:
-                if f in search_files:
+                if f in search_files and (len(git_files_list) == 0 or f in git_files_list):
                     out_items.append('%s:True' % os.path.join(root, f))
     return ' '.join(out_items)
 

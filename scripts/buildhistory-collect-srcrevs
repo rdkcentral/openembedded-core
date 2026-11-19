@@ -71,6 +71,8 @@ def main():
                 orig_srcrev = None
                 orig_srcrevs = {}
                 srcrevs = {}
+                tag_srcrevs = {}
+                tag_versions = {}
                 with open(fullpath) as f:
                     for line in f:
                         if '=' in line:
@@ -87,6 +89,21 @@ def main():
                         elif line.startswith('SRCREV_'):
                             name = splitval[0].split('_')[1].strip()
                             srcrevs[name] = value
+                        #Check if tag value is present and replace srcrev value with tag version in order to resolve the conflict raised between tag and srcrev.
+                        elif line.startswith('# tag_'):
+                            name = splitval[0].split('_')[1].strip()
+                            version = splitval[0].split('_')[2].strip()
+                            tag_srcrevs [name] = value
+                            tag_versions [name] = version
+
+                for name, value in tag_srcrevs.items():
+                    if srcrevs:
+                        if tag_srcrevs[name] == srcrevs[name]:
+                            srcrevs[name] = tag_versions[name]
+
+                    if srcrev == tag_srcrevs[name]:
+                        srcrev =  tag_versions[name]
+
                 if srcrev and (options.reportall or srcrev != orig_srcrev):
                     all_srcrevs[curdir].append((pn, None, srcrev))
                 for name, value in srcrevs.items():
