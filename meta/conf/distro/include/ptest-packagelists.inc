@@ -117,20 +117,33 @@ PTESTS_SLOW = "\
     dpkg \
     e2fsprogs \
     elfutils \
+    file \
     gettext \
     glib-2.0 \
     gnutls \
     gstreamer1.0 \
+    iptables \
+    kbd \
     less \
+    libatomic-ops \
+    libcap \
     libevent \
+    libffi \
     libgcrypt \
     libmodule-build-perl \
+    libpcap \
     libpng \
+    libtool \
+    liburcu \
+    libxcrypt \
+    libxslt \
     ${@bb.utils.contains('DISTRO_FEATURES', 'seccomp', 'libseccomp', '',d)} \
     lttng-tools \
     lz4 \
+    ncurses \
     openssh \
     openssl \
+    opkg-utils \
     parted \
     perl \
     python3 \
@@ -144,6 +157,7 @@ PTESTS_SLOW = "\
     tcl \
     tcl8 \
     util-linux \
+    zstd \
 "
 
 # python3 ptests hang on qemuriscv64
