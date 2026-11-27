@@ -13,6 +13,7 @@ DEPENDS = "bison-native flex-native"
 DEPENDS:append:libc-musl = " fts"
 
 SRC_URI = "${GITHUB_BASE_URI}/download/v${PV}/${BP}.tar.gz"
+SRC_URI += "file://0001-use-sd_bus_add_match.patch"
 UPSTREAM_CHECK_URI = "https://github.com/libcgroup/libcgroup/tags"
 
 SRC_URI[sha256sum] = "9a0fc2d6c377215c3e0d849f9189ecd91fd075f1da0a24b73f56c8892e86bdfe"

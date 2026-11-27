@@ -1,0 +1,19 @@
+From: Build compatibility fix
+Subject: [PATCH] Use sd_bus_add_match for JobRemoved signals
+
+sd_bus_match_signal is unavailable in the systemd headers used by this build.
+Register the equivalent D-Bus signal match through the older sd_bus_add_match
+API instead.
+
+Upstream-Status: Pending
+
+--- a/src/systemd.c
++++ b/src/systemd.c
+@@ -231,2 +231,5 @@
+-	sdret = sd_bus_match_signal(bus, NULL, sender, path, interface,
+-				    "JobRemoved", job_removed_callback, &job_path);
++	sdret = sd_bus_add_match(bus, NULL,
++				 "type='signal',sender='org.freedesktop.systemd1',"
++				 "path='/org/freedesktop/systemd1',"
++				 "interface='org.freedesktop.systemd1.Manager',member='JobRemoved'",
++				 job_removed_callback, &job_path);

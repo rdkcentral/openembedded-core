@@ -146,6 +146,26 @@ PTESTS_SLOW = "\
     util-linux \
 "
 
+RDK_WRYNOSE_PTESTS_SLOW = " \
+    file \
+    iptables \
+    kbd \
+    libatomic-ops \
+    libcap \
+    libffi \
+    libpcap \
+    libtool \
+    liburcu \
+    libxcrypt \
+    libxslt \
+    ncurses \
+    opkg-utils \
+    zstd \
+"
+PTESTS_SLOW:append:rdk-arm64-wrynose = " ${RDK_WRYNOSE_PTESTS_SLOW}"
+PTESTS_SLOW:append:rdk-arm7a-wrynose = " ${RDK_WRYNOSE_PTESTS_SLOW}"
+PTESTS_SLOW:append:rdk-arm7ve-wrynose = " ${RDK_WRYNOSE_PTESTS_SLOW}"
+
 # python3 ptests hang on qemuriscv64
 PTESTS_SLOW:remove:riscv64 = "python3"
 PTESTS_PROBLEMS:append:riscv64 = " python3"
