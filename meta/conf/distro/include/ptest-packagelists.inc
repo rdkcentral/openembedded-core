@@ -117,33 +117,20 @@ PTESTS_SLOW = "\
     dpkg \
     e2fsprogs \
     elfutils \
-    file \
     gettext \
     glib-2.0 \
     gnutls \
     gstreamer1.0 \
-    iptables \
-    kbd \
     less \
-    libatomic-ops \
-    libcap \
     libevent \
-    libffi \
     libgcrypt \
     libmodule-build-perl \
-    libpcap \
     libpng \
-    libtool \
-    liburcu \
-    libxcrypt \
-    libxslt \
     ${@bb.utils.contains('DISTRO_FEATURES', 'seccomp', 'libseccomp', '',d)} \
     lttng-tools \
     lz4 \
-    ncurses \
     openssh \
     openssl \
-    opkg-utils \
     parted \
     perl \
     python3 \
@@ -157,8 +144,27 @@ PTESTS_SLOW = "\
     tcl \
     tcl8 \
     util-linux \
+"
+
+RDK_WRYNOSE_PTESTS_SLOW = " \
+    file \
+    iptables \
+    kbd \
+    libatomic-ops \
+    libcap \
+    libffi \
+    libpcap \
+    libtool \
+    liburcu \
+    libxcrypt \
+    libxslt \
+    ncurses \
+    opkg-utils \
     zstd \
 "
+PTESTS_SLOW:append:rdk-arm64-wrynose = " ${RDK_WRYNOSE_PTESTS_SLOW}"
+PTESTS_SLOW:append:rdk-arm7a-wrynose = " ${RDK_WRYNOSE_PTESTS_SLOW}"
+PTESTS_SLOW:append:rdk-arm7ve-wrynose = " ${RDK_WRYNOSE_PTESTS_SLOW}"
 
 # python3 ptests hang on qemuriscv64
 PTESTS_SLOW:remove:riscv64 = "python3"

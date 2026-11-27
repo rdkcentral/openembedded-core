@@ -57,7 +57,7 @@ do_install_ptest() {
 	    -e "/^TEST_LOG_DRIVER =/s|(top_srcdir)|(top_builddir)|" \
 	    -e '/^CC_FOR_BUILD/s/\s-std=gnu23//g' \
 	    -i ${D}/${PTEST_PATH}/${TESTDIR}/Makefile
-    sed -i '1s|^#!/bin/sed|#!/usr/bin/sed|' ${D}/${PTEST_PATH}/${TESTDIR}/ksysent.sed
+    sed -i '1s|^#!/bin/sed|#!${base_bindir}/sed|' ${D}/${PTEST_PATH}/${TESTDIR}/ksysent.sed
 }
 
 RDEPENDS:${PN}-ptest += "make coreutils grep gawk sed locale-base-en-us"
