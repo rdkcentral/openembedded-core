@@ -67,6 +67,9 @@ DEPENDS += "speexdsp libxml-parser-perl-native libcap"
 
 inherit bash-completion meson pkgconfig useradd gettext perlnative systemd manpages gsettings
 
+# The module directory is versioned by PulseAudio's major/minor release.
+PULSE_MODULEDIR = "${libdir}/pulse-${@'.'.join(d.getVar('PV').split('.')[:2])}/modules"
+
 # *.desktop rules wont be generated during configure and build will fail
 # if using --disable-nls
 USE_NLS = "yes"
@@ -228,7 +231,7 @@ pkg_postinst:${PN}-server() {
 }
 
 python populate_packages:prepend() {
-    plugindir = d.expand('${libdir}/pulseaudio/modules/')
+    plugindir = d.getVar('PULSE_MODULEDIR')
     do_split_packages(d, plugindir, r'^module-(.*)\.so$', '${PN}-module-%s', 'PulseAudio module for %s', extra_depends='', prepend=True)
     do_split_packages(d, plugindir, r'^lib(.*)\.so$', '${PN}-lib-%s', 'PulseAudio library for %s', extra_depends='', prepend=True)
 }
@@ -276,7 +279,7 @@ RDEPENDS:pulseaudio-server += "${@bb.utils.contains('DISTRO_FEATURES', 'pulseaud
 RDEPENDS:pulseaudio-module-console-kit =+ "${@bb.utils.contains('DISTRO_FEATURES', 'sysvinit x11', 'consolekit', '', d)}"
 RDEPENDS:pulseaudio-misc += "pulseaudio-module-cli-protocol-unix"
 
-FILES:${PN}-module-alsa-card += "${datadir}/pulseaudio/alsa-mixer"
+FILES:${PN}-module-alsa-card += "${datadir}/pulseaudio/alsa-mixer/paths/* ${datadir}/pulseaudio/alsa-mixer/profile-sets/*"
 
 GSETTINGS_PACKAGE = "${@bb.utils.contains('PACKAGECONFIG', 'gsettings', '${PN}-module-gsettings', '', d)}"
 FILES:${PN}-module-gsettings += "${libexecdir}/pulse/gsettings-helper ${datadir}/GConf/gsettings ${datadir}/glib-2.0/schemas"

@@ -20,23 +20,17 @@ Upstream-Status: Submitted [https://gitlab.freedesktop.org/mesa/mesa/-/merge_req
 [locally generated patch after git am'ing it to remove fuzz]
 Signed-off-by: Quentin Schulz <quentin.schulz@cherry.de>
 ---
- src/freedreno/meson.build           | 5 +++--
+ src/freedreno/meson.build           | 3 +++-
  src/freedreno/registers/meson.build | 2 ++
- 2 files changed, 5 insertions(+), 2 deletions(-)
+ 2 files changed, 4 insertions(+), 1 deletion(-)
 
 diff --git a/src/freedreno/meson.build b/src/freedreno/meson.build
 index a4bfd337179..330b6468d01 100644
 --- a/src/freedreno/meson.build
 +++ b/src/freedreno/meson.build
-@@ -4,9 +4,10 @@
- inc_freedreno = include_directories(['.', './registers', './registers/adreno', './common'])
- inc_freedreno_rnn = include_directories('rnn')
- 
--rnn_src_path = dir_source_root + '/src/freedreno/registers'
-+rnn_rel_path = 'src/freedreno/registers'
-+rnn_src_path = dir_source_root + '/' + rnn_rel_path
- rnn_install_path = get_option('datadir') + '/freedreno/registers'
+@@ -26,1 +26,2 @@
 -rnn_path = rnn_src_path + ':' + get_option('prefix') + '/' + rnn_install_path
++rnn_rel_path = 'src/freedreno/registers'
 +rnn_path = rnn_rel_path + ':' + get_option('prefix') + '/' + rnn_install_path
  
  dep_libarchive = dependency('libarchive', allow_fallback: true, required: false, disabler : true)
@@ -45,10 +39,8 @@ diff --git a/src/freedreno/registers/meson.build b/src/freedreno/registers/meson
 index f4be68117c3..cd0caafa431 100644
 --- a/src/freedreno/registers/meson.build
 +++ b/src/freedreno/registers/meson.build
-@@ -43,4 +43,6 @@ if install_fd_decode_tools
-   endforeach
- endif
- 
+@@ -53,1 +53,3 @@
+-subdir('adreno')
 +devenv.set('RNN_PATH', meson.current_source_dir())
 +
- subdir('adreno')
++subdir('adreno')

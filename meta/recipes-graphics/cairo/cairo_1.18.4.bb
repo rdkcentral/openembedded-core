@@ -60,7 +60,7 @@ EXTRA_OEMESON = "-Dsymbol-lookup=disabled -Dspectre=disabled -Dtests=disabled"
 
 do_install:append () {
     if ! ${@bb.utils.contains('PACKAGECONFIG', 'trace', 'true', 'false', d)}; then
-        rm ${D}${bindir}/cairo-trace ${D}${libdir}/cairo/libcairo-trace.so
+        rm ${D}${bindir}/cairo-trace ${D}${libdir}/cairo/libcairo-trace.so ${D}${libdir}/cairo/libcairo-fdr.so
         rmdir --ignore-fail-on-non-empty ${D}${bindir} ${D}${libdir}/cairo
     fi
 }

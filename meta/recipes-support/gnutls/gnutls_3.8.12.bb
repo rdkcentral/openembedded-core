@@ -24,6 +24,19 @@ SRC_URI = "https://www.gnupg.org/ftp/gcrypt/gnutls/v${SHRT_VER}/gnutls-${PV}.tar
            file://run-ptest \
            file://Add-ptest-support.patch \
            file://c99.patch \
+           file://0001-tests-mini-dtls-fragments-implement-a-basic-DTLS-tes.patch \
+           file://0002-buffers-shorten-merge_handshake_packet-using-recv_bu.patch \
+           file://0003-buffers-add-more-checks-to-DTLS-reassembly.patch \
+           file://0004-tests-mini-dtls-fragments-extend-with-a-1816-reprodu.patch \
+           file://0005-tests-mini-dtls-fragments-extend-with-fragmenting-Cl.patch \
+           file://0006-buffers-match-DTLS-datagrams-by-sequence-number.patch \
+           file://0007-tests-mini-dtls-fragments-1839-mismatching-message_s.patch \
+           file://0008-tests-mini-dtls-framents-link-to-gnulib.patch \
+           file://CVE-2026-3832_p1.patch \
+           file://CVE-2026-3832_p2.patch \
+           file://CVE-2026-42009_p1.patch \
+           file://CVE-2026-42009_p2.patch \
+           file://CVE-2026-3833.patch \
            "
 
 SRC_URI[sha256sum] = "a7b341421bfd459acf7a374ca4af3b9e06608dcd7bd792b2bf470bea012b8e51"
@@ -107,3 +120,4 @@ pkg_postinst_ontarget:${PN}-fips () {
 
 CVE_STATUS[CVE-2025-32989] = "fixed-version: fixed in version 3.8.10"
 CVE_STATUS[CVE-2025-32990] = "fixed-version: fixed in version 3.8.10"
+CVE_STATUS[CVE-2026-1584] = "fixed-version: fixed in version 3.8.12"

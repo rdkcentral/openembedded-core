@@ -19,6 +19,7 @@ inherit rust-common
 
 # Where we download our registry and dependencies to
 export CARGO_HOME = "${UNPACKDIR}/cargo_home"
+export LD_LIBRARY_PATH:prepend = "${STAGING_LIBDIR_NATIVE}:"
 
 # The pkg-config-rs library used by cargo build scripts disables itself when
 # cross compiling unless this is defined. We set up pkg-config appropriately
@@ -127,6 +128,12 @@ cargo_common_do_configure () {
 	[term]
 	progress.when = 'always'
 	progress.width = 80
+	EOF
+
+	cat <<- EOF >> ${CARGO_HOME}/config.toml
+
+	[env]
+	RUST_TARGET_PATH = { value = "${RUST_TARGET_PATH}", force = true }
 	EOF
 }
 

@@ -44,7 +44,22 @@ CARGO_BUILD_FLAGS = "-v --frozen --target ${RUST_HOST_SYS} ${BUILD_MODE} --manif
 BUILD_DIR = "${@['release', 'debug'][d.getVar('DEBUG_BUILD') == '1']}"
 CARGO_TARGET_SUBDIR = "${RUST_HOST_SYS}/${BUILD_DIR}"
 oe_cargo_build () {
+	# rustc's reported host triple is Yocto's BUILD_SYS, not the generated Rust triple.
+	if [ -f "${STAGING_LIBDIR_NATIVE}/rustlib/${BUILD_SYS}.json" ]; then
+		install -d "${RUST_TARGETS_DIR}"
+		install -m 0644 "${STAGING_LIBDIR_NATIVE}/rustlib/${BUILD_SYS}.json" \
+			"${RUST_TARGETS_DIR}/${BUILD_SYS}.json"
+		install -d "${STAGING_LIBDIR_NATIVE}/rustlib/${BUILD_SYS}"
+		install -m 0644 "${STAGING_LIBDIR_NATIVE}/rustlib/${BUILD_SYS}.json" \
+			"${STAGING_LIBDIR_NATIVE}/rustlib/${BUILD_SYS}/target.json"
+	fi
+	if [ -n "$LD_LIBRARY_PATH" ]; then
+		export LD_LIBRARY_PATH="${STAGING_LIBDIR_NATIVE}:$LD_LIBRARY_PATH"
+	else
+		export LD_LIBRARY_PATH="${STAGING_LIBDIR_NATIVE}"
+	fi
 	export RUSTFLAGS="${RUSTFLAGS}"
+	bbnote "rustc = $(which rustc)"
 	bbnote "Using rust targets from ${RUST_TARGET_PATH}"
 	bbnote "cargo = $(which ${CARGO})"
 	bbnote "${CARGO} build ${CARGO_BUILD_FLAGS} ${PACKAGECONFIG_CONFARGS} $@"

@@ -171,7 +171,7 @@ python useradd_sysroot_sstate () {
         task = d.getVar("BB_CURRENTTASK")
         if task == "package_setscene":
             bb.build.exec_func(type + "add_sysroot", d)
-        elif task == "prepare_recipe_sysroot":
+        elif task in ("prepare_recipe_sysroot", "install_ipk_recipe_sysroot"):
             # Used to update this recipe's own sysroot so the user/groups are available to do_install
 
             # If do_populate_sysroot is triggered and we write the file here, there would be an overlapping
